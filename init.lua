@@ -1,6 +1,13 @@
 minetest.register_privilege("trusted", {description = "You are trusted...", give_to_singleplayer=false})
 
+-- nothing "not normal" happening
 local nothing = minetest.registered_items["bucket:bucket_lava"].on_place
+local nothing_lava_can = minetest.registered_items["technic:lava_can"].on_place
+local nothing_water = minetest.registered_items["bucket:bucket_water"].on_place
+local nothing_water_can = minetest.registered_items["technic:water_can"].on_place
+
+local MAX_LAVA_PLACE_DEPTH = -50 -- no placing in general except for trusted player under this depth
+local MAX_WATER_PLACE_DEPTH = 50 -- placing in general only under this depth except for trusted player
 
 minetest.override_item("bucket:bucket_lava", {
 	on_place = function(itemstack, placer, pointed_thing)
@@ -13,6 +20,18 @@ minetest.override_item("bucket:bucket_lava", {
 	end,
 })
 
+minetest.override_item("bucket:bucket_water", {
+	on_place = function(itemstack, placer, pointed_thing)
+		local pos = pointed_thing.under
+		if not minetest.check_player_privs(placer:get_player_name(),
+				{trusted = true}) and pos.y > (MAX_WATER_PLACE_DEPTH-2) then
+			return itemstack
+		else
+				return nothing_water(itemstack, placer, pointed_thing)
+		end
+	end,
+})
+
 if minetest.get_modpath("technic") then
 	minetest.override_item("technic:lava_can", {
 		on_place = function(itemstack, placer, pointed_thing)
@@ -20,7 +39,21 @@ if minetest.get_modpath("technic") then
 					{trusted = true}) then
 				return itemstack
 			else
-				return nothing(itemstack, placer, pointed_thing)
+				return nothing_lava_can(itemstack, placer, pointed_thing)
+			end
+		end,
+	})
+end
+
+if minetest.get_modpath("technic") then
+	minetest.override_item("technic:water_can", {
+		on_place = function(itemstack, placer, pointed_thing)
+			local pos = pointed_thing.under
+			if not minetest.check_player_privs(placer:get_player_name(),
+					{trusted = true}) and pos.y > (MAX_WATER_PLACE_DEPTH-2) then
+				return itemstack
+			else
+				return nothing_water_can(itemstack, placer, pointed_thing)
 			end
 		end,
 	})
@@ -33,9 +66,22 @@ minetest.override_item("default:lava_source", {
 			minetest.remove_node(pos)
 		end
 	end,
+	-- forbid constructing lava sources in general above MAX_LAVA_PLACE_DEPTH
+	on_construct = function(pos)
+			if pos.y >= MAX_LAVA_PLACE_DEPTH then
+				minetest.env:remove_node(pos)
+			end
+	end,
 })
 
-
+minetest.override_item("default:water_source", {
+	after_place_node = function(pos, placer, itemstack, pointed_thing)
+	 if not minetest.check_player_privs(placer:get_player_name(),
+				{trusted = true}) and pos.y >= MAX_WATER_PLACE_DEPTH then
+			minetest.remove_node(pos)
+		end
+	end,
+})
 
 local function check_protection(pos, name, text)
 	if minetest.is_protected(pos, name) then
