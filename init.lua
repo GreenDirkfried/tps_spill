@@ -2,9 +2,12 @@ minetest.register_privilege("trusted", {description = "You are trusted...", give
 
 -- nothing "not normal" happening
 local nothing = minetest.registered_items["bucket:bucket_lava"].on_place
-local nothing_lava_can = minetest.registered_items["technic:lava_can"].on_place
 local nothing_water = minetest.registered_items["bucket:bucket_water"].on_place
+
+if minetest.get_modpath("technic") then
+local nothing_lava_can = minetest.registered_items["technic:lava_can"].on_place
 local nothing_water_can = minetest.registered_items["technic:water_can"].on_place
+end
 
 local MAX_LAVA_PLACE_DEPTH = -50 -- no placing in general except for trusted player under this depth
 local MAX_WATER_PLACE_DEPTH = 50 -- placing in general only under this depth except for trusted player
